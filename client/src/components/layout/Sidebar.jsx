@@ -191,7 +191,7 @@ export default function Sidebar({ mobileOpen, onClose, menuStyle = 'vertical', s
   const [expanded, setExpanded] = useState(false);
   const [openKey, setOpenKey] = useState('');
   const { canAccess } = useAuth();
-  const { data } = useData();
+  const { data, activeBranch, currentBranch } = useData();
   const visibleItems = navItems.filter((item) => canAccess(item.key));
   const horizontal = menuStyle === 'horizontal';
   const showText = horizontal || mobileOpen || expanded || sideNavOptions?.pinned;

@@ -1,1008 +1,495 @@
 import 'package:flutter/material.dart';
 import '../models/member_data.dart';
 import '../theme/app_theme.dart';
+import '../widgets/set_goal_dialog.dart';
 
-// ── design constants ───────────────────────────────────────────────────────
-class _C {
-  static const primary     = AppTheme.primary;
-  static const textDark    = Color(0xFF101828);
-  static const textGray    = Color(0xFF667085);
-  static const orange      = Color(0xFFF97316);
-  static const r24         = Radius.circular(24);
-  static const shadow = [
-    BoxShadow(color: Color(0x0A000000), blurRadius: 14, offset: Offset(0, 4)),
-  ];
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-//  ProgressScreen  — drop-in replacement for _progressPage()
-// ══════════════════════════════════════════════════════════════════════════
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({
     super.key,
     required this.member,
     required this.onRefresh,
+    this.initialGoal,
   });
 
   final MemberData member;
   final Future<void> Function() onRefresh;
+  final GoalData? initialGoal;
 
   @override
   State<ProgressScreen> createState() => _ProgressScreenState();
 }
 
-class _ProgressScreenState extends State<ProgressScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tab;
-  double _currentWeight = 72.0;
-  final List<({String exercise, String weight, String reps, String date})> _prs = [
-    (exercise: 'Bench Press', weight: '100 kg', reps: '1 rep', date: '3 days ago'),
-    (exercise: 'Barbell Squat', weight: '140 kg', reps: '3 reps', date: 'Last week'),
-    (exercise: 'Deadlift', weight: '160 kg', reps: '1 rep', date: '2 weeks ago'),
-    (exercise: 'Pull-ups', weight: 'Bodyweight + 15 kg', reps: '8 reps', date: '10 days ago'),
-  ];
+class _ProgressScreenState extends State<ProgressScreen> {
+  int _selectedPeriodIndex = 0;
+  final List<String> _periods = const ['Week', 'Month', 'Year'];
+  late GoalData _goal;
 
   @override
   void initState() {
     super.initState();
-    _currentWeight = widget.member.weight > 0 ? widget.member.weight : 72.0;
-    _tab = TabController(length: 3, vsync: this);
-    _tab.addListener(() => setState(() {}));
+    _goal = widget.initialGoal ?? GoalData.defaultGoal;
   }
 
-  @override
-  void dispose() {
-    _tab.dispose();
-    super.dispose();
-  }
-
-  void _showLogWeightDialog() {
-    final controller = TextEditingController(text: _currentWeight.toStringAsFixed(1));
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Log Current Weight', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Keep track of your body recomposition journey.', style: TextStyle(fontSize: 12, color: _C.textGray)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: 'Weight (kg)',
-                  suffixText: 'kg',
-                  prefixIcon: const Icon(Icons.monitor_weight_outlined, color: _C.primary),
-                  filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-              ),
-            ],
-          ),
+  Future<void> _handleSetGoal() async {
+    final newGoal = await showSetGoalDialog(context, _goal);
+    if (newGoal != null && mounted) {
+      setState(() => _goal = newGoal);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Fitness Goal & Weekly Targets Updated! 🎯'),
+          backgroundColor: AppTheme.primary,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: _C.textGray, fontWeight: FontWeight.w700)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _C.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            ),
-            onPressed: () {
-              final val = double.tryParse(controller.text.trim());
-              if (val != null && val > 0) {
-                setState(() => _currentWeight = val);
-              }
-              Navigator.pop(ctx);
-            },
-            child: const Text('Save Entry', style: TextStyle(fontWeight: FontWeight.w800)),
-          ),
-        ],
-      ),
-    );
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
-      color: _C.primary,
+      color: AppTheme.primary,
       onRefresh: widget.onRefresh,
-      child: CustomScrollView(
+      child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          // 1. Top Brand Header + Progress Greeting
-          SliverToBoxAdapter(
-            child: _ProgressHeader(member: widget.member),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-          // 2. Main Consistency / Attendance Hero Ring Card
-          const SliverToBoxAdapter(
-            child: _ConsistencyHeroCard(
-              visitsThisMonth: 18,
-              totalTargetVisits: 24,
-              streakDays: 5,
-              totalHours: '28.5 hrs',
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 18)),
-
-          // 3. Tabs + Log Weight Quick Action Button
-          SliverToBoxAdapter(
-            child: _ProgressTabs(
-              ctrl: _tab,
-              onLogWeight: _showLogWeightDialog,
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 14)),
-
-          // 4. Tab Content
-          SliverToBoxAdapter(
-            child: _tabContent(),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
-        ],
-      ),
-    );
-  }
-
-  Widget _tabContent() {
-    switch (_tab.index) {
-      case 1:
-        return _BodyCompositionTab(
-          weight: _currentWeight,
-          height: widget.member.height > 0 ? widget.member.height : 178,
-          onLogWeight: _showLogWeightDialog,
-        );
-      case 2:
-        return _PersonalRecordsTab(prs: _prs);
-      default:
-        return const _ConsistencyOverviewTab();
-    }
-  }
-}
-
-// ── PROGRESS HEADER ────────────────────────────────────────────────────────
-class _ProgressHeader extends StatelessWidget {
-  const _ProgressHeader({required this.member});
-  final MemberData member;
-
-  @override
-  Widget build(BuildContext context) {
-    final first = member.name.split(' ').firstOrNull ?? member.name;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Top App Bar: Brand Logo & Action Buttons
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12, top: 2),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // bilzyfit brand
-              Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      'assets/images/Applogo.png',
-                      width: 38,
-                      height: 38,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      RichText(
-                        text: const TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'bilzy',
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.5,
-                                color: Color(0xFF101828),
-                              ),
-                            ),
-                            TextSpan(
-                              text: 'fit',
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.5,
-                                color: _C.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      const Text(
-                        'TRAIN  •  TRACK  •  TRANSFORM',
-                        style: TextStyle(
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 2.2,
-                          color: Color(0xFF94A3B8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-
-              // Action buttons (Bell + QR)
-              Row(
-                children: [
-                  _iconBtn(
-                    Icons.notifications_none_rounded,
-                    const Color(0xFFF1F5F9),
-                    const Color(0xFF475569),
-                  ),
-                  const SizedBox(width: 10),
-                  _iconBtn(
-                    Icons.qr_code_2_rounded,
-                    _C.primary,
-                    Colors.white,
-                    shadow: const [
-                      BoxShadow(
-                        color: Color(0x3300A878),
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        // Greeting & Trophy Card
-        Container(
-          width: double.infinity,
-          height: 146,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.all(_C.r24),
-            boxShadow: _C.shadow,
-          ),
-          child: ClipRRect(
-            borderRadius: const BorderRadius.all(_C.r24),
-            child: Stack(
-              children: [
-                // Soft organic green backdrop circles
-                Positioned(
-                  right: -20,
-                  top: -20,
-                  child: Container(
-                    width: 180,
-                    height: 180,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _C.primary.withValues(alpha: 0.12),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: 90,
-                  bottom: -15,
-                  child: Container(
-                    width: 110,
-                    height: 110,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF0EA5E9).withValues(alpha: 0.08),
-                    ),
-                  ),
-                ),
-
-                // Trophy achievement visual on the right
-                Positioned(
-                  right: 12,
-                  top: 14,
-                  bottom: 14,
-                  width: 140,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFECFDF5),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: _C.primary.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: const Center(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('🏆', style: TextStyle(fontSize: 38)),
-                            SizedBox(height: 4),
-                            Text(
-                              'Top 10% Gym',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: _C.primary,
-                              ),
-                            ),
-                            Text(
-                              'Consistency Index',
-                              style: TextStyle(
-                                fontSize: 8.5,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF059669),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Left text content
-                Positioned(
-                  left: 20,
-                  top: 20,
-                  bottom: 20,
-                  right: 160,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Hi, $first 👋',
-                          style: const TextStyle(
-                            color: _C.textGray,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        RichText(
-                          text: const TextSpan(
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.5,
-                              color: _C.textDark,
-                            ),
-                            children: [
-                              TextSpan(text: 'My '),
-                              TextSpan(
-                                text: 'Progress',
-                                style: TextStyle(color: _C.primary),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        const Text(
-                          'Track consistency & transformation 📈',
-                          style: TextStyle(
-                            color: _C.textGray,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  static Widget _iconBtn(IconData icon, Color bg, Color fg,
-      {List<BoxShadow> shadow = const []}) {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: bg,
-        shape: BoxShape.circle,
-        boxShadow: shadow,
-      ),
-      child: Icon(icon, color: fg, size: 22),
-    );
-  }
-}
-
-// ── CONSISTENCY HERO CARD (ATTENDANCE RING + STATS) ─────────────────────────
-class _ConsistencyHeroCard extends StatelessWidget {
-  const _ConsistencyHeroCard({
-    required this.visitsThisMonth,
-    required this.totalTargetVisits,
-    required this.streakDays,
-    required this.totalHours,
-  });
-
-  final int visitsThisMonth;
-  final int totalTargetVisits;
-  final int streakDays;
-  final String totalHours;
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = (visitsThisMonth / totalTargetVisits).clamp(0.0, 1.0);
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.all(_C.r24),
-        boxShadow: _C.shadow,
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              // Circular Attendance Ring
-              SizedBox(
-                width: 104,
-                height: 104,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      width: 104,
-                      height: 104,
-                      child: CircularProgressIndicator(
-                        value: progress,
-                        strokeWidth: 10,
-                        backgroundColor: const Color(0xFFF1F5F9),
-                        color: _C.primary,
-                        strokeCap: StrokeCap.round,
-                      ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '$visitsThisMonth',
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                            color: _C.textDark,
-                            height: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        const Text(
-                          'VISITS',
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                            color: _C.textGray,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 20),
-
-              // Summary Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFEF3C7),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.local_fire_department_rounded,
-                                  color: _C.orange, size: 14),
-                              const SizedBox(width: 3),
-                              Text(
-                                '$streakDays Day Streak',
-                                style: const TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFFB45309),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Outstanding Consistency!',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: _C.textDark,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'You have completed ${(progress * 100).toInt()}% of your monthly attendance goal.',
-                      style: const TextStyle(fontSize: 11.5, color: _C.textGray, height: 1.3),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // 3 Metric Badges
-          Row(
-            children: [
-              _metricPill('📅 Goal', '$visitsThisMonth / $totalTargetVisits days',
-                  const Color(0xFFDCFCE7), const Color(0xFF15803D)),
-              const SizedBox(width: 8),
-              _metricPill('⏱ Gym Time', totalHours,
-                  const Color(0xFFE0F2FE), const Color(0xFF0369A1)),
-              const SizedBox(width: 8),
-              _metricPill('⚡ Level', 'Beast Mode',
-                  const Color(0xFFEDE9FE), const Color(0xFF6D28D9)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _metricPill(String label, String value, Color bg, Color fg) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(14),
-        ),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: fg),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: fg),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── PROGRESS TABS ──────────────────────────────────────────────────────────
-class _ProgressTabs extends StatelessWidget {
-  const _ProgressTabs({required this.ctrl, required this.onLogWeight});
-  final TabController ctrl;
-  final VoidCallback  onLogWeight;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 38,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF2F4F7),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: TabBar(
-              controller: ctrl,
-              indicator: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              labelColor: _C.primary,
-              unselectedLabelColor: _C.textGray,
-              labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-              unselectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-              tabs: const [
-                Tab(text: 'Consistency'),
-                Tab(text: 'Body Metrics'),
-                Tab(text: 'PRs & Strength'),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        GestureDetector(
-          onTap: onLogWeight,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            decoration: BoxDecoration(
-              color: _C.primary,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x3300A878),
-                  blurRadius: 8,
-                  offset: Offset(0, 3),
-                ),
-              ],
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
+            // Top Bar: "Progress" Title & "Set Goal" Button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(Icons.add, color: Colors.white, size: 14),
-                SizedBox(width: 4),
-                Text(
-                  'Log Entry',
+                const Text(
+                  'Progress',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textPrimary,
+                    letterSpacing: -0.4,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: _handleSetGoal,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: AppTheme.neuButton(radius: 18),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.flag_rounded, color: Colors.white, size: 16),
+                        SizedBox(width: 6),
+                        Text(
+                          'Set Goal',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
-// ── TAB 1: CONSISTENCY OVERVIEW TAB ─────────────────────────────────────────
-class _ConsistencyOverviewTab extends StatelessWidget {
-  const _ConsistencyOverviewTab();
+            const SizedBox(height: 18),
 
-  @override
-  Widget build(BuildContext context) {
-    const weeklyData = [
-      (week: 'Week 1', days: '5 / 6 Days', percent: 0.83, color: Color(0xFF10B981)),
-      (week: 'Week 2', days: '4 / 6 Days', percent: 0.67, color: Color(0xFF0EA5E9)),
-      (week: 'Week 3', days: '5 / 6 Days', percent: 0.83, color: Color(0xFF10B981)),
-      (week: 'Week 4 (Current)', days: '4 / 4 Days', percent: 1.0, color: Color(0xFFF59E0B)),
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.all(_C.r24),
-        boxShadow: _C.shadow,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Weekly Attendance Breakdown',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: _C.textDark),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Consistency breakdown for September 2026',
-            style: TextStyle(fontSize: 12, color: _C.textGray),
-          ),
-          const SizedBox(height: 16),
-
-          ...weeklyData.map((w) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+            // Weekly Target Plan Card
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: AppTheme.neuBox(radius: 22),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(w.week, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: _C.textDark)),
-                      Text(w.days, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: w.color)),
+                      const Text(
+                        'Weekly Target Plan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        '${_goal.weeklyWorkoutsDone}/${_goal.weeklyWorkoutsTarget} Days Completed',
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.primary,
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 12),
+                  // Workout Days Progress Bar
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(8),
                     child: LinearProgressIndicator(
-                      value: w.percent,
-                      minHeight: 7,
-                      backgroundColor: const Color(0xFFF1F5F9),
-                      color: w.color,
+                      value: _goal.workoutProgress,
+                      minHeight: 10,
+                      backgroundColor: AppTheme.shadowDark.withValues(alpha: 0.4),
+                      valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primary),
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  // Goal Targets Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _miniGoalItem(
+                        'Weight Goal',
+                        '${_goal.currentWeight} ➔ ${_goal.targetWeight} kg',
+                        Icons.monitor_weight_rounded,
+                        const Color(0xFF3B82F6),
+                      ),
+                      _miniGoalItem(
+                        'Daily Steps',
+                        '${_goal.dailyStepsDone} / ${_goal.dailyStepsTarget}',
+                        Icons.directions_walk_rounded,
+                        const Color(0xFF10B981),
+                      ),
+                      _miniGoalItem(
+                        'Daily Burn',
+                        '${_goal.dailyCaloriesBurned} / ${_goal.dailyCaloriesTarget} kcal',
+                        Icons.local_fire_department_rounded,
+                        const Color(0xFFFF5252),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-            );
-          }),
-
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0FDF4),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFBBF7D0)),
             ),
-            child: const Row(
-              children: [
-                Text('🔥', style: TextStyle(fontSize: 20)),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'You are in the top 10% of regular gym goers this month! Maintaining this pace accelerates metabolic conditioning by 28%.',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF166534), height: 1.3),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
-// ── TAB 2: BODY COMPOSITION TAB ────────────────────────────────────────────
-class _BodyCompositionTab extends StatelessWidget {
-  const _BodyCompositionTab({
-    required this.weight,
-    required this.height,
-    required this.onLogWeight,
-  });
+            const SizedBox(height: 22),
 
-  final double weight;
-  final int height;
-  final VoidCallback onLogWeight;
-
-  @override
-  Widget build(BuildContext context) {
-    final heightInMeters = height / 100.0;
-    final bmi = (weight / (heightInMeters * heightInMeters)).toStringAsFixed(1);
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.all(_C.r24),
-        boxShadow: _C.shadow,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Body Composition', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: _C.textDark)),
-                  SizedBox(height: 2),
-                  Text('Physical metrics & transformation', style: TextStyle(fontSize: 12, color: _C.textGray)),
-                ],
-              ),
-              OutlinedButton.icon(
-                onPressed: onLogWeight,
-                icon: const Icon(Icons.edit_outlined, size: 14),
-                label: const Text('Update', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: _C.primary,
-                  side: BorderSide(color: _C.primary.withValues(alpha: 0.3)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // 3 Big Metric Cards
-          Row(
-            children: [
-              _metricBox('Weight', '${weight.toStringAsFixed(1)} kg', '-4.5 kg down', const Color(0xFF10B981)),
-              const SizedBox(width: 8),
-              _metricBox('Height', '$height cm', 'Standard', const Color(0xFF0EA5E9)),
-              const SizedBox(width: 8),
-              _metricBox('BMI', bmi, 'Healthy Range', const Color(0xFFF59E0B)),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // Transformation Progress Card
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Goal: 70.0 kg', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: _C.textDark)),
-                    Text('88% Target Reached', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: _C.primary)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: const LinearProgressIndicator(
-                    value: 0.88,
-                    minHeight: 8,
-                    backgroundColor: Color(0xFFE2E8F0),
-                    color: _C.primary,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Start: 76.5 kg', style: TextStyle(fontSize: 11, color: _C.textGray, fontWeight: FontWeight.w600)),
-                    Text('Current: 72.0 kg', style: TextStyle(fontSize: 11, color: _C.primary, fontWeight: FontWeight.w800)),
-                    Text('Goal: 70.0 kg', style: TextStyle(fontSize: 11, color: _C.textGray, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _metricBox(String label, String value, String sub, Color badgeColor) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-        ),
-        child: Column(
-          children: [
-            Text(label, style: const TextStyle(fontSize: 11, color: _C.textGray, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 4),
-            Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: _C.textDark)),
-            const SizedBox(height: 4),
+            // Segmented Period Filter: [Week], [Month], [Year] (Screen 10)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-              decoration: BoxDecoration(
-                color: badgeColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                sub,
-                style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: badgeColor),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              padding: const EdgeInsets.all(4),
+              decoration: AppTheme.neuBox(radius: 20, inset: true),
+              child: Row(
+                children: List.generate(_periods.length, (index) {
+                  final isSelected = index == _selectedPeriodIndex;
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedPeriodIndex = index),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: isSelected
+                            ? BoxDecoration(
+                                gradient: AppTheme.primaryGradient,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.primary.withValues(alpha: 0.35),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              )
+                            : BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                        child: Center(
+                          child: Text(
+                            _periods[index],
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                              color: isSelected ? Colors.white : AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
               ),
             ),
+
+            const SizedBox(height: 24),
+
+            // Smooth Curve Chart Card (Screen 10)
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+              decoration: AppTheme.neuBox(radius: 24),
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 160,
+                    width: double.infinity,
+                    child: CustomPaint(
+                      painter: _NeumorphicChartPainter(
+                        points: const [0.35, 0.55, 0.40, 0.88, 0.65, 0.75, 0.50],
+                        highlightIndex: 3,
+                        highlightText: '${_goal.dailyCaloriesBurned} cal',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _DayLabel('Mon'),
+                      _DayLabel('Tue'),
+                      _DayLabel('Wed'),
+                      _DayLabel('Thu', isHighlight: true),
+                      _DayLabel('Fri'),
+                      _DayLabel('Sat'),
+                      _DayLabel('Sun'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 28),
+
+            // 2x2 Grid of Neumorphic Stat Cards (Screen 10)
+            Row(
+              children: [
+                Expanded(
+                  child: _statCard(
+                    icon: Icons.directions_walk_rounded,
+                    iconColor: const Color(0xFF10B981),
+                    title: 'Steps',
+                    value: '${_goal.dailyStepsDone}',
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _statCard(
+                    icon: Icons.local_fire_department_rounded,
+                    iconColor: const Color(0xFFFF5252),
+                    title: 'Calories',
+                    value: '${_goal.dailyCaloriesBurned}',
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            Row(
+              children: [
+                Expanded(
+                  child: _statCard(
+                    icon: Icons.monitor_weight_rounded,
+                    iconColor: const Color(0xFF3B82F6),
+                    title: 'Weight',
+                    value: '${_goal.currentWeight} kg',
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _statCard(
+                    icon: Icons.fitness_center_rounded,
+                    iconColor: const Color(0xFF8B5CF6),
+                    title: 'Workout',
+                    value: '${_goal.weeklyWorkoutsDone} Days',
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
-}
 
-// ── TAB 3: PERSONAL RECORDS (PRS & STRENGTH) ───────────────────────────────
-class _PersonalRecordsTab extends StatelessWidget {
-  const _PersonalRecordsTab({required this.prs});
-  final List<({String exercise, String weight, String reps, String date})> prs;
+  Widget _miniGoalItem(String title, String value, IconData icon, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: color, size: 14),
+            const SizedBox(width: 4),
+            Text(title, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+          ],
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+        ),
+      ],
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _statCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String value,
+  }) {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.all(_C.r24),
-        boxShadow: _C.shadow,
-      ),
+      decoration: AppTheme.neuBox(radius: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Personal Records (PRs)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: _C.textDark)),
-                  SizedBox(height: 2),
-                  Text('Your all-time best gym lifts', style: TextStyle(fontSize: 12, color: _C.textGray)),
-                ],
-              ),
-              Text('🏋️‍♂️', style: TextStyle(fontSize: 24)),
-            ],
+          Container(
+            width: 42,
+            height: 42,
+            decoration: AppTheme.neuCircle(),
+            child: Icon(icon, color: iconColor, size: 22),
           ),
-          const SizedBox(height: 16),
-
-          ...prs.map((item) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Center(
-                      child: Text('🥇', style: TextStyle(fontSize: 18)),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(item.exercise, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: _C.textDark)),
-                        const SizedBox(height: 2),
-                        Text(item.date, style: const TextStyle(fontSize: 10, color: _C.textGray)),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(item.weight, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: _C.primary)),
-                      Text(item.reps, style: const TextStyle(fontSize: 10, color: _C.textGray, fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          }),
+          const SizedBox(height: 14),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textPrimary,
+              letterSpacing: -0.3,
+            ),
+          ),
         ],
       ),
     );
   }
+}
+
+class _DayLabel extends StatelessWidget {
+  const _DayLabel(this.text, {this.isHighlight = false});
+  final String text;
+  final bool isHighlight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w500,
+        color: isHighlight ? AppTheme.primary : AppTheme.textSecondary,
+      ),
+    );
+  }
+}
+
+class _NeumorphicChartPainter extends CustomPainter {
+  _NeumorphicChartPainter({
+    required this.points,
+    required this.highlightIndex,
+    required this.highlightText,
+  });
+
+  final List<double> points;
+  final int highlightIndex;
+  final String highlightText;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double stepX = size.width / (points.length - 1);
+    final path = Path();
+    final fillPath = Path();
+
+    final List<Offset> coords = [];
+    for (int i = 0; i < points.length; i++) {
+      final x = i * stepX;
+      final y = size.height - (points[i] * size.height * 0.75) - 10;
+      coords.add(Offset(x, y));
+    }
+
+    path.moveTo(coords[0].dx, coords[0].dy);
+    fillPath.moveTo(coords[0].dx, size.height);
+    fillPath.lineTo(coords[0].dx, coords[0].dy);
+
+    for (int i = 0; i < coords.length - 1; i++) {
+      final p0 = coords[i];
+      final p1 = coords[i + 1];
+      final controlX = (p0.dx + p1.dx) / 2;
+      path.cubicTo(controlX, p0.dy, controlX, p1.dy, p1.dx, p1.dy);
+      fillPath.cubicTo(controlX, p0.dy, controlX, p1.dy, p1.dx, p1.dy);
+    }
+
+    fillPath.lineTo(coords.last.dx, size.height);
+    fillPath.close();
+
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          AppTheme.primary.withValues(alpha: 0.35),
+          AppTheme.primary.withValues(alpha: 0.0),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawPath(fillPath, fillPaint);
+
+    final linePaint = Paint()
+      ..color = AppTheme.primary
+      ..strokeWidth = 3.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    canvas.drawPath(path, linePaint);
+
+    final target = coords[highlightIndex];
+
+    final glowPaint = Paint()
+      ..color = AppTheme.primary.withValues(alpha: 0.25)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(target, 12, glowPaint);
+
+    final pointPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(target, 6, pointPaint);
+
+    final borderPaint = Paint()
+      ..color = AppTheme.primary
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke;
+    canvas.drawCircle(target, 6, borderPaint);
+
+    final textSpan = TextSpan(
+      text: highlightText,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 10,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+    final textPainter = TextPainter(
+      text: textSpan,
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    final pillWidth = textPainter.width + 16;
+    final pillHeight = textPainter.height + 8;
+    final pillRect = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: Offset(target.dx, target.dy - 24),
+        width: pillWidth,
+        height: pillHeight,
+      ),
+      const Radius.circular(10),
+    );
+
+    final tagPaint = Paint()
+      ..shader = AppTheme.primaryGradient.createShader(pillRect.outerRect);
+    canvas.drawRRect(pillRect, tagPaint);
+
+    textPainter.paint(
+      canvas,
+      Offset(target.dx - (textPainter.width / 2), target.dy - 24 - (textPainter.height / 2)),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _NeumorphicChartPainter oldDelegate) => true;
 }

@@ -72,6 +72,26 @@ class FirestoreService {
     return null;
   }
 
+  /// Fetch member by email
+  Future<Map<String, dynamic>?> getMemberByEmail(String email, {String workspaceId = 'demo-workspace'}) async {
+    if (!_isInitialized && Firebase.apps.isEmpty) {
+      return null;
+    }
+    try {
+      final snapshot = await firestore
+          .collection('workspaces/$workspaceId/members')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+      if (snapshot.docs.isNotEmpty) {
+        return snapshot.docs.first.data();
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
+  }
+
   /// Real-time stream for member document updates
   Stream<MemberData?> streamMember({
     required String memberId,

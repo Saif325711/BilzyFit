@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'screens/member_shell.dart';
+import 'screens/onboarding_screen.dart';
 import 'services/firestore_service.dart';
 import 'theme/app_theme.dart';
 
@@ -24,7 +24,7 @@ class BilzyFitMemberApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Bilzy Member',
+      title: 'FitTrack Member',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       home: const MemberSplashScreen(),
@@ -50,7 +50,7 @@ class _MemberSplashScreenState extends State<MemberSplashScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 1200),
     );
 
     _fadeAnimation = CurvedAnimation(
@@ -58,7 +58,7 @@ class _MemberSplashScreenState extends State<MemberSplashScreen>
       curve: Curves.easeOutCubic,
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.82, end: 1.0).animate(
+    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: Curves.easeOutBack,
@@ -67,15 +67,17 @@ class _MemberSplashScreenState extends State<MemberSplashScreen>
 
     _controller.forward();
 
+    // After splash delay, navigate to OnboardingScreen (Screen 2)
     Future<void>.delayed(const Duration(milliseconds: 2400), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder<void>(
-            pageBuilder: (_, _, _) => const MemberShell(),
-            transitionsBuilder: (_, animation, _, child) {
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const OnboardingScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(opacity: animation, child: child);
             },
-            transitionDuration: const Duration(milliseconds: 600),
+            transitionDuration: const Duration(milliseconds: 500),
           ),
         );
       }
@@ -91,228 +93,160 @@ class _MemberSplashScreenState extends State<MemberSplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF090D16),
-      body: Stack(
-        children: [
-          // Background ambient gradient orbs
-          Positioned(
-            top: -100,
-            left: -80,
-            child: Container(
-              width: 320,
-              height: 320,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFF00C88C).withValues(alpha: 0.22),
-                    Colors.transparent,
-                  ],
-                ),
+      backgroundColor: AppTheme.background,
+      body: SafeArea(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Ambient soft background floating neumorphic bubbles
+            Positioned(
+              top: 50,
+              left: -40,
+              child: Container(
+                width: 150,
+                height: 150,
+                decoration: AppTheme.neuCircle(),
               ),
             ),
-          ),
-          Positioned(
-            bottom: -60,
-            right: -60,
-            child: Container(
-              width: 340,
-              height: 340,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFF059669).withValues(alpha: 0.18),
-                    Colors.transparent,
-                  ],
-                ),
+            Positioned(
+              top: 100,
+              right: -30,
+              child: Container(
+                width: 110,
+                height: 110,
+                decoration: AppTheme.neuCircle(),
               ),
             ),
-          ),
+            Positioned(
+              bottom: 80,
+              right: -40,
+              child: Container(
+                width: 170,
+                height: 170,
+                decoration: AppTheme.neuCircle(),
+              ),
+            ),
+            Positioned(
+              bottom: 120,
+              left: -30,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: AppTheme.neuCircle(),
+              ),
+            ),
 
-          // Main Center Content
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Glow Badge containing App Logo
-                        Container(
-                          width: 130,
-                          height: 130,
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Color(0xFF00E599),
-                                Color(0xFF008A60),
-                              ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF00C88C).withValues(alpha: 0.4),
-                                blurRadius: 36,
-                                spreadRadius: 4,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
+            // Center Content: Logo, Title, Subtitle, Progress Pill
+            Center(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Large Neumorphic Outer Dish with 3D Dumbbell (Screen 1)
+                      Container(
+                        width: 190,
+                        height: 190,
+                        decoration: AppTheme.neuCircle(),
+                        child: Center(
                           child: Container(
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Color(0xFF0F172A),
-                            ),
-                            padding: const EdgeInsets.all(8),
-                            child: ClipOval(
-                              child: Image.asset(
-                                'assets/images/Applogo.png',
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) => const Center(
+                            width: 140,
+                            height: 140,
+                            decoration: AppTheme.neuCircle(inset: true),
+                            child: Center(
+                              child: Container(
+                                width: 90,
+                                height: 90,
+                                decoration: BoxDecoration(
+                                  gradient: AppTheme.primaryGradient,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppTheme.primary.withValues(alpha: 0.45),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
                                   child: Icon(
                                     Icons.fitness_center_rounded,
-                                    color: Color(0xFF00C88C),
-                                    size: 54,
+                                    size: 46,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 28),
+                      ),
 
-                        // Brand Title
-                        RichText(
-                          textAlign: TextAlign.center,
-                          text: const TextSpan(
-                            children: [
-                              TextSpan(
-                                text: 'BILZY',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 34,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 2.0,
-                                ),
-                              ),
-                              TextSpan(
-                                text: 'FIT',
-                                style: TextStyle(
-                                  color: Color(0xFF00C88C),
-                                  fontSize: 34,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 2.0,
-                                ),
-                              ),
-                            ],
-                          ),
+                      const SizedBox(height: 38),
+
+                      // FitTrack Title
+                      const Text(
+                        'FitTrack',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color: AppTheme.textPrimary,
+                          letterSpacing: -0.6,
                         ),
-                        const SizedBox(height: 8),
+                      ),
 
-                        // Subtitle Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                      const SizedBox(height: 8),
+
+                      // Subtitle
+                      const Text(
+                        'Your Personal Fitness Companion',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+
+                      const SizedBox(height: 48),
+
+                      // Neumorphic Mini Progress Pill Bar
+                      Container(
+                        width: 70,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: AppTheme.background,
+                          borderRadius: BorderRadius.circular(3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.shadowDark.withValues(alpha: 0.7),
+                              offset: const Offset(2, 2),
+                              blurRadius: 4,
+                            ),
+                            const BoxShadow(
+                              color: AppTheme.shadowLight,
+                              offset: Offset(-2, -2),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          width: 38,
+                          height: 6,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF00C88C).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: const Color(0xFF00C88C).withValues(alpha: 0.35),
-                              width: 1,
-                            ),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.verified_rounded,
-                                color: Color(0xFF00C88C),
-                                size: 14,
-                              ),
-                              SizedBox(width: 6),
-                              Text(
-                                'MEMBER ACCESS PORTAL',
-                                style: TextStyle(
-                                  color: Color(0xFF00C88C),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ],
+                            gradient: AppTheme.primaryGradient,
+                            borderRadius: BorderRadius.circular(3),
                           ),
                         ),
-                        const SizedBox(height: 14),
-
-                        Text(
-                          'Train  •  Track  •  Transform',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.65),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 48),
-
-                        // Sleek Loading Indicator Bar
-                        SizedBox(
-                          width: 140,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: const LinearProgressIndicator(
-                              minHeight: 3.5,
-                              backgroundColor: Color(0xFF1E293B),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xFF00C88C),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        Text(
-                          'Synchronizing your gym plan...',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
-          ),
-
-          // Footer
-          Positioned(
-            bottom: 24,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Text(
-                'POWERED BY BILZYFIT FITNESS CLOUD',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.3),
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

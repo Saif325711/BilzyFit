@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/member_data.dart';
 import '../services/member_sync_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/member_plan_editors.dart';
+import '../widgets/app_drawer.dart';
+import '../widgets/create_workout_dialog.dart';
+import '../widgets/create_diet_dialog.dart';
+import '../widgets/set_goal_dialog.dart';
+import 'diet_screen.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
-import 'workout_screen.dart';
-import 'diet_screen.dart';
-import 'progress_screen.dart';
 import 'payment_screen.dart';
 import 'profile_screen.dart';
+import 'progress_screen.dart';
+import 'workout_screen.dart';
 
 class MemberShell extends StatefulWidget {
   const MemberShell({super.key});
@@ -20,13 +24,17 @@ class MemberShell extends StatefulWidget {
 }
 
 class _MemberShellState extends State<MemberShell> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int currentIndex = 0;
   bool _isLoggedIn = false;
   MemberData member = MemberData.demo;
-  List<WorkoutPlan> memberWorkouts = workoutPlans;
-  List<DietPlan> memberDiets = dietPlans;
-  bool workoutLoading = true;
-  bool dietLoading = true;
+  List<WorkoutPlan> memberWorkouts = List.from(workoutPlans);
+  List<DietPlan> memberDiets = List.from(dietPlans);
+  List<Payment> memberPayments = List.from(paymentHistory);
+  GoalData _goal = GoalData.defaultGoal;
+
+  bool workoutLoading = false;
+  bool dietLoading = false;
 
   @override
   void initState() {
@@ -47,57 +55,111 @@ class _MemberShellState extends State<MemberShell> {
         });
       }
     } on Exception {
-      // Keep the bundled plan available when the gym server is offline.
-    } finally {
-      if (mounted) setState(() => workoutLoading = false);
-      if (mounted) setState(() => dietLoading = false);
+      // Offline fallback
     }
   }
 
   Future<void> _createWorkout() async {
-    final plan = await showWorkoutEditor(context);
+    final plan = await showCreateWorkoutDialog(context);
     if (plan == null) return;
     setState(() => memberWorkouts = [plan, ...memberWorkouts]);
-    try {
-      await const MemberSyncService().publishPlan(
-        workspaceId: 'demo-workspace',
-        memberEmail: member.email,
-        memberName: member.name,
-        workout: plan,
-      );
-      if (mounted) _showMessage('Workout saved and synced with Bilzy Fit.');
-    } on Exception {
-      if (mounted) _showMessage('Workout saved on this device. Sync server is offline.');
-    }
   }
 
   Future<void> _createDiet() async {
-    final plan = await showDietEditor(context);
-    if (plan == null) return;
+    final meal = await showCreateMealDialog(context);
+    if (meal == null) return;
+    final plan = DietPlan(
+      meal.items,
+      'Custom meal added by you.',
+      [meal],
+      source: 'custom',
+    );
     setState(() => memberDiets = [plan, ...memberDiets]);
-    try {
-      await const MemberSyncService().publishPlan(
-        workspaceId: 'demo-workspace',
-        memberEmail: member.email,
-        memberName: member.name,
-        diet: plan,
+  }
+
+  Future<void> _openSetGoalDialog() async {
+    final newGoal = await showSetGoalDialog(context, _goal);
+    if (newGoal != null && mounted) {
+      setState(() => _goal = newGoal);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Fitness Goal & Weekly Targets Updated! 🎯'),
+          backgroundColor: AppTheme.primary,
+        ),
       );
-      if (mounted) _showMessage('Diet saved and synced with Bilzy Fit.');
-    } on Exception {
-      if (mounted) _showMessage('Diet saved on this device. Sync server is offline.');
     }
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  void _openPaymentsScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PaymentScreen(
+          member: member,
+          payments: memberPayments,
+          onRefresh: _loadMemberWorkouts,
+        ),
+      ),
+    );
   }
 
   void selectTab(int index) => setState(() => currentIndex = index);
 
+  void _openDrawer() {
+    _scaffoldKey.currentState?.openDrawer();
+  }
+
+  void _openDietScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          backgroundColor: AppTheme.background,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                margin: const EdgeInsets.all(8),
+                decoration: AppTheme.neuCircle(),
+                child: const Icon(
+                  Icons.arrow_back_rounded,
+                  color: AppTheme.textPrimary,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+          body: SafeArea(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: double.infinity,
+                  child: DietScreen(
+                    member: member,
+                    diets: memberDiets,
+                    loading: dietLoading,
+                    onRefresh: _loadMemberWorkouts,
+                    onCreateDiet: _createDiet,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ));
+
     if (!_isLoggedIn) {
       return LoginScreen(
         onLoginSuccess: (loggedMember) {
@@ -109,154 +171,84 @@ class _MemberShellState extends State<MemberShell> {
       );
     }
 
-    final workoutPage = WorkoutScreen(
-      member: member,
-      workouts: memberWorkouts,
-      loading: workoutLoading,
-      onRefresh: _loadMemberWorkouts,
-      onCreateWorkout: _createWorkout,
-    );
-
-    final dietPage = DietScreen(
-      member: member,
-      diets: memberDiets,
-      loading: dietLoading,
-      onRefresh: _loadMemberWorkouts,
-      onCreateDiet: _createDiet,
-    );
-
-    final progressPage = ProgressScreen(
-      member: member,
-      onRefresh: _loadMemberWorkouts,
-    );
-
-    final paymentPage = PaymentScreen(
-      member: member,
-      payments: paymentHistory,
-      onRefresh: _loadMemberWorkouts,
-    );
-
-    final profilePage = ProfileScreen(
-      member: member,
-      onRefresh: _loadMemberWorkouts,
-      onSignOut: () {
-        setState(() {
-          _isLoggedIn = false;
-        });
-      },
-    );
-
-    final homePage = HomeScreen(
-      member: member,
-      onNavigate: selectTab,
-      onShowCheckIn: _showCheckIn,
-      onRefresh: _loadMemberWorkouts,
-    );
-
     final pages = [
-      homePage,
-      workoutPage,
-      dietPage,
-      progressPage,
-      paymentPage,
-      profilePage,
+      HomeScreen(
+        member: member,
+        goal: _goal,
+        onSetGoal: _openSetGoalDialog,
+        onNavigate: (index) {
+          if (index == 2) {
+            _openDietScreen();
+          } else {
+            selectTab(index);
+          }
+        },
+        onOpenDrawer: _openDrawer,
+        onRefresh: _loadMemberWorkouts,
+      ),
+      WorkoutScreen(
+        member: member,
+        workouts: memberWorkouts,
+        loading: workoutLoading,
+        onRefresh: _loadMemberWorkouts,
+        onCreateWorkout: _createWorkout,
+      ),
+      ProgressScreen(
+        member: member,
+        initialGoal: _goal,
+        onRefresh: _loadMemberWorkouts,
+      ),
+      ProfileScreen(
+        member: member,
+        onRefresh: _loadMemberWorkouts,
+        onSignOut: () => setState(() => _isLoggedIn = false),
+        onNavigateTab: selectTab,
+        onOpenPayments: _openPaymentsScreen,
+      ),
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      key: _scaffoldKey,
+      backgroundColor: AppTheme.background,
+      drawer: AppDrawer(
+        member: member,
+        currentIndex: currentIndex,
+        onSelectTab: (index) {
+          if (index == 2) {
+            _openDietScreen();
+          } else if (index < pages.length) {
+            selectTab(index);
+          }
+        },
+        onOpenPayments: _openPaymentsScreen,
+        onSetGoal: _openSetGoalDialog,
+        onSignOut: () => setState(() => _isLoggedIn = false),
+      ),
       body: SafeArea(
-        child: Center(
+        child: Align(
+          alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 620),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: SizedBox(
+              width: double.infinity,
+              height: double.infinity,
               child: pages[currentIndex],
             ),
           ),
         ),
       ),
-      bottomNavigationBar: _PremiumNavBar(
+      bottomNavigationBar: _NeuBottomNavBar(
         selectedIndex: currentIndex,
         onTap: selectTab,
       ),
     );
   }
-
-  // _homePage() replaced by HomeScreen widget (see home_screen.dart)
-  // _dietPage() replaced by DietScreen widget (see diet_screen.dart)
-  // _progressPage() replaced by ProgressScreen widget (see progress_screen.dart)
-  // _paymentsPage() replaced by PaymentScreen widget (see payment_screen.dart)
-  // _profilePage() replaced by ProfileScreen widget (see profile_screen.dart)
-
-
-
-
-
-
-
-  void _showCheckIn() {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) => SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Quick check-in',
-                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
-                ),
-              ),
-              const SizedBox(height: 5),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Show this code at reception'),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  border: Border.all(
-                    color: AppTheme.primary.withValues(alpha: .15),
-                    width: 8,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(Icons.qr_code_2, size: 140),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                member.memberId,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 5),
-              const Text(
-                'This code identifies your active membership.',
-                style: TextStyle(color: Colors.black54),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
-class _PremiumNavBar extends StatelessWidget {
-  const _PremiumNavBar({
+// ─── 4-Tab Neumorphism Bottom Navigation Bar ─────────────────────────────────
+
+class _NeuBottomNavBar extends StatelessWidget {
+  const _NeuBottomNavBar({
     required this.selectedIndex,
     required this.onTap,
   });
@@ -267,67 +259,69 @@ class _PremiumNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const items = [
-      (icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
-      (icon: Icons.fitness_center_outlined, activeIcon: Icons.fitness_center_rounded, label: 'Workout'),
-      (icon: Icons.restaurant_outlined, activeIcon: Icons.restaurant_rounded, label: 'Diet'),
-      (icon: Icons.show_chart_rounded, activeIcon: Icons.show_chart_rounded, label: 'Progress'),
-      (icon: Icons.credit_card_outlined, activeIcon: Icons.credit_card_rounded, label: 'Payments'),
-      (icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profile'),
+      _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
+      _NavItem(icon: Icons.fitness_center_outlined, activeIcon: Icons.fitness_center_rounded, label: 'Workout'),
+      _NavItem(icon: Icons.bar_chart_rounded, activeIcon: Icons.bar_chart_rounded, label: 'Stats'),
+      _NavItem(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profile'),
     ];
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Color(0xFFF1F5F9), width: 1),
-        ),
+      decoration: BoxDecoration(
+        color: AppTheme.background,
         boxShadow: [
           BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 16,
-            offset: Offset(0, -4),
+            color: AppTheme.shadowDark.withValues(alpha: 0.65),
+            blurRadius: 18,
+            offset: const Offset(0, -6),
+          ),
+          const BoxShadow(
+            color: AppTheme.shadowLight,
+            blurRadius: 10,
+            offset: Offset(0, -2),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: List.generate(items.length, (i) {
               final item = items[i];
               final isSelected = selectedIndex == i;
               return Expanded(
-                child: InkWell(
+                child: GestureDetector(
                   onTap: () => onTap(i),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+                  behavior: HitTestBehavior.opaque,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: isSelected
+                        ? BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                          )
+                        : BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFFD1FAE5) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Icon(
-                            isSelected ? item.activeIcon : item.icon,
-                            size: 20,
-                            color: isSelected ? AppTheme.primary : const Color(0xFF94A3B8),
-                          ),
+                        Icon(
+                          isSelected ? item.activeIcon : item.icon,
+                          size: 24,
+                          color: isSelected ? AppTheme.primary : AppTheme.textHint,
                         ),
-                        const SizedBox(height: 2),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            item.label,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                              color: isSelected ? AppTheme.primary : const Color(0xFF64748B),
-                            ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.label,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            color: isSelected ? AppTheme.primary : AppTheme.textHint,
                           ),
                         ),
                       ],
@@ -343,3 +337,9 @@ class _PremiumNavBar extends StatelessWidget {
   }
 }
 
+class _NavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  const _NavItem({required this.icon, required this.activeIcon, required this.label});
+}
