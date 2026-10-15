@@ -1,0 +1,916 @@
+/* ===================================================
+   EDUSYNC / EDUBLIQ — DEDICATED SCHOOL ERP LANDING PAGE STYLES
+   Font: Lora Serif + Enterprise Clean Aesthetics
+   =================================================== */
+
+.erp-page {
+  background-color: var(--bg-white);
+  color: var(--text-main);
+  font-family: var(--font-serif);
+}
+
+/* 1. ERP HERO SECTION */
+.erp-hero {
+  position: relative;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  padding: 80px 0 60px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.erp-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  margin-bottom: 20px;
+}
+
+.erp-hero-title {
+  font-size: 3.2rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  letter-spacing: -0.03em;
+  line-height: 1.18;
+  max-width: 920px;
+  margin: 0 auto 20px;
+}
+
+@media (max-width: 768px) {
+  .erp-hero-title {
+    font-size: 2.2rem;
+  }
+}
+
+.erp-hero-sub {
+  font-size: 1.15rem;
+  color: var(--text-muted);
+  max-width: 780px;
+  margin: 0 auto 36px;
+  line-height: 1.65;
+}
+
+.erp-hero-ctas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 48px;
+}
+
+/* ERP Live Console Preview in Hero */
+.erp-console-preview {
+  max-width: 1160px;
+  margin: 0 auto;
+  background-color: #ffffff;
+  border-radius: var(--radius-xl);
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.erp-console-header {
+  background-color: #0f172a;
+  color: #ffffff;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.erp-console-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.erp-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+
+.erp-dot.red { background-color: #ef4444; }
+.erp-dot.yellow { background-color: #f59e0b; }
+.erp-dot.green { background-color: #10b981; }
+
+.erp-tabs-bar {
+  display: flex;
+  align-items: center;
+  background-color: #1e293b;
+  padding: 0 16px;
+  overflow-x: auto;
+  gap: 4px;
+}
+
+.erp-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.erp-tab-btn:hover {
+  color: #ffffff;
+}
+
+.erp-tab-btn.active {
+  color: #60a5fa;
+  border-bottom-color: #3b82f6;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.erp-console-body {
+  padding: 24px;
+  background-color: #f8fafc;
+  min-height: 380px;
+}
+
+/* 2. ERP ARCHITECTURE & DATA FLOW */
+.erp-arch-section {
+  padding: 80px 0;
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.erp-arch-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 48px;
+}
+
+@media (max-width: 1024px) {
+  .erp-arch-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.erp-arch-card {
+  background-color: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.erp-arch-card:hover {
+  border-color: #93c5fd;
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.arch-card-num {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #2563eb;
+  background-color: #eff6ff;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  margin-bottom: 14px;
+}
+
+/* 3. CORE ERP PILLARS */
+.erp-pillars-section {
+  padding: 88px 0;
+  background-color: #f8fafc;
+}
+
+.erp-pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 48px;
+}
+
+@media (max-width: 1024px) {
+  .erp-pillars-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .erp-pillars-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pillar-box {
+  background-color: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  box-shadow: var(--shadow-xs);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.pillar-box:hover {
+  border-color: #cbd5e1;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.pillar-icon-circle {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  font-size: 20px;
+}
+
+.pillar-box-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: 8px;
+}
+
+.pillar-box-desc {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin-bottom: 18px;
+  flex-grow: 1;
+}
+
+.pillar-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pillar-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+/* 4. INTERACTIVE ROI & SAVINGS CALCULATOR */
+.erp-roi-section {
+  padding: 88px 0;
+  background-color: #ffffff;
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.roi-card {
+  max-width: 980px;
+  margin: 40px auto 0;
+  background-color: #0f172a;
+  color: #ffffff;
+  border-radius: var(--radius-xl);
+  padding: 44px;
+  box-shadow: var(--shadow-2xl);
+}
+
+@media (max-width: 768px) {
+  .roi-card {
+    padding: 24px;
+  }
+}
+
+.roi-slider-container {
+  margin: 32px 0;
+}
+
+.roi-slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.roi-slider-val {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #60a5fa;
+}
+
+.roi-range-input {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: #334155;
+  outline: none;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+.roi-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 36px;
+  padding-top: 28px;
+  border-top: 1px solid #334155;
+}
+
+@media (max-width: 640px) {
+  .roi-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.roi-metric-item {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  text-align: center;
+}
+
+.roi-metric-num {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #38bdf8;
+  margin-bottom: 4px;
+}
+
+.roi-metric-label {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+/* 5. 7-DAY IMPLEMENTATION ROADMAP */
+.erp-roadmap-section {
+  padding: 88px 0;
+  background-color: #f8fafc;
+}
+
+.roadmap-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-top: 48px;
+  position: relative;
+}
+
+@media (max-width: 1024px) {
+  .roadmap-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .roadmap-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.roadmap-card {
+  background-color: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-xs);
+  transition: all 0.2s ease;
+}
+
+.roadmap-card:hover {
+  border-color: #93c5fd;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.roadmap-day {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #2563eb;
+  background-color: #eff6ff;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+/* 6. COMPARISON TABLE */
+.erp-comparison-section {
+  padding: 88px 0;
+  background-color: #ffffff;
+  border-top: 1px solid var(--border-light);
+}
+
+.comp-table-wrap {
+  margin-top: 44px;
+  overflow-x: auto;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.erp-comp-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.erp-comp-table th, .erp-comp-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.erp-comp-table th {
+  background-color: #f8fafc;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.erp-comp-table th.highlight-col,
+.erp-comp-table td.highlight-col {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+/* 7. COMPLIANCE BADGES */
+.compliance-strip {
+  background-color: #ffffff;
+  padding: 36px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.compliance-grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+  flex-wrap: wrap;
+}
+
+.compliance-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  background-color: #f8fafc;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-light);
+}
+
+/* ===================================================
+   3.5. ROLE-BASED ACCESS CONTROL (RBAC) ARCHITECTURE TREE
+   =================================================== */
+.erp-hierarchy-section {
+  padding: 88px 0;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 50%, #f8fafc 100%);
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.hierarchy-hint-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  margin-top: 14px;
+}
+
+.hierarchy-split-container {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 28px;
+  align-items: start;
+  margin-top: 32px;
+}
+
+@media (max-width: 1200px) {
+  .hierarchy-split-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tree Canvas Wrapper */
+.hierarchy-tree-canvas-wrapper {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 32px 24px;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+}
+
+.hierarchy-tree-canvas {
+  min-width: 900px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Tree Tier Rows */
+.tree-tier-row {
+  display: flex;
+  width: 100%;
+}
+
+.tree-tier-row.center-row {
+  justify-content: center;
+}
+
+.tree-tier-row.three-pillars-row {
+  justify-content: space-around;
+  padding: 0 40px;
+}
+
+.tree-tier-row.staff-grid-row {
+  display: grid;
+  grid-template-columns: 1.35fr repeat(8, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+/* Connectors */
+.tree-connector-v {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  height: 20px;
+}
+
+.tree-connector-v .stem-line {
+  width: 2px;
+  height: 100%;
+  background-color: #94a3b8;
+}
+
+.tree-branch-bracket-3 {
+  width: 72%;
+  height: 16px;
+  border-top: 2px solid #94a3b8;
+  border-left: 2px solid #94a3b8;
+  border-right: 2px solid #94a3b8;
+  margin: 0 auto;
+}
+
+.tree-reunion-bracket-3 {
+  width: 72%;
+  height: 16px;
+  border-bottom: 2px solid #94a3b8;
+  border-left: 2px solid #94a3b8;
+  border-right: 2px solid #94a3b8;
+  margin: 0 auto;
+}
+
+.tree-staff-bus-bracket {
+  width: 94%;
+  height: 16px;
+  border-top: 2px solid #94a3b8;
+  border-left: 2px solid #94a3b8;
+  border-right: 2px solid #94a3b8;
+  margin: 0 auto;
+}
+
+/* Node Card Base */
+.tree-node-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tree-node-card:hover {
+  transform: translateY(-2px);
+  border-color: #38bdf8;
+  box-shadow: 0 8px 16px rgba(56, 189, 248, 0.15);
+}
+
+.tree-node-card.active {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3), 0 8px 20px rgba(37, 99, 235, 0.12);
+}
+
+.tree-node-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tree-node-text {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.tree-node-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 1px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 2px;
+}
+
+.tree-node-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-node-sub {
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.2;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-node-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: transparent;
+  flex-shrink: 0;
+}
+
+.tree-node-card.active .tree-node-indicator {
+  background-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+/* Tier Specific Sizes */
+.tree-node-card.tier-trustee {
+  min-width: 360px;
+  padding: 14px 18px;
+  border-width: 2px;
+  border-color: #fde68a;
+  background: linear-gradient(180deg, #ffffff 0%, #fffdf5 100%);
+}
+
+.tree-node-card.tier-core-erp {
+  min-width: 380px;
+  padding: 14px 18px;
+  border-width: 2px;
+  border-color: #bae6fd;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%);
+}
+
+.tree-node-card.tier-pillar {
+  min-width: 220px;
+  padding: 12px 14px;
+}
+
+.tree-node-card.tier-staff {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 10px 6px;
+  gap: 6px;
+  min-width: 82px;
+}
+
+.tree-node-card.tier-staff .tree-node-title {
+  font-size: 0.78rem;
+}
+
+.tree-node-card.tier-staff .tree-node-sub {
+  font-size: 0.68rem;
+}
+
+.tree-tag-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 3px;
+  white-space: nowrap;
+}
+
+/* Teacher & Children Column */
+.staff-col-with-children {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.teacher-sub-stem {
+  width: 2px;
+  height: 12px;
+  background-color: #94a3b8;
+}
+
+.teacher-sub-bracket {
+  width: 80%;
+  height: 10px;
+  border-top: 2px solid #94a3b8;
+  border-left: 2px solid #94a3b8;
+  border-right: 2px solid #94a3b8;
+}
+
+.teacher-children-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  width: 100%;
+}
+
+.tree-node-card.tier-enduser {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 4px;
+  gap: 4px;
+}
+
+.tree-node-card.tier-enduser .tree-node-title {
+  font-size: 0.74rem;
+}
+
+.tree-node-card.tier-enduser .tree-node-sub {
+  font-size: 0.65rem;
+}
+
+/* Right Side Inspector Pane */
+.hierarchy-inspector-pane {
+  position: sticky;
+  top: 24px;
+}
+
+.inspector-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.02);
+}
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.inspector-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.inspector-tier-badge {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+.inspector-role-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 2px;
+  line-height: 1.2;
+}
+
+.inspector-role-subtitle {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.inspector-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  background-color: #f8fafc;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #f1f5f9;
+  margin-bottom: 18px;
+}
+
+.inspector-meta-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  font-size: 11.5px;
+  gap: 8px;
+}
+
+.inspector-meta-item .meta-label {
+  color: #64748b;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.inspector-meta-item .meta-val {
+  color: #0f172a;
+  font-weight: 700;
+  text-align: right;
+}
+
+.inspector-section {
+  margin-bottom: 18px;
+}
+
+.inspector-section-heading {
+  font-size: 11px;
+  font-weight: 800;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.inspector-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  color: #334155;
+  line-height: 1.45;
+}
+
+.inspector-bullets li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.inspector-perm-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.perm-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #166534;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.inspector-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
